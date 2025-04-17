@@ -22,9 +22,9 @@ def train_agent(env, agent, replay_buffer, args):
     # Statistics tracking
     episode_rewards = []
     episode_lengths = []
-    episode_success_rates = []  # 新增：跟踪每个回合的成功率
+    episode_success_rates = []  # trace success rate 
     evaluation_scores = []
-    evaluation_success_rates = []  # 新增：跟踪评估的成功率
+    evaluation_success_rates = []  # trave evaluation of success rate
     training_time = 0
     
     # Create directories for saving results
@@ -33,19 +33,19 @@ def train_agent(env, agent, replay_buffer, args):
     
     # Training loop
     total_timesteps = 0
-    episode_count = 0  # 添加回合计数器
+    episode_count = 0  # add counter
     
-    # 添加提前退出标志
+
     should_exit = False
     
     # Progress bar
     progress_bar = tqdm(total=args.max_timesteps, desc=f"Training {args.algorithm}")
     
     while total_timesteps < args.max_timesteps and not should_exit:
-        episode_count += 1  # 每个回合开始时增加计数
+        episode_count += 1  # start counting 
         episode_reward = 0
         episode_length = 0
-        episode_success = 0  # 新增：回合成功标志
+        episode_success = 0  
         done = False
         truncated = False
         
@@ -77,10 +77,10 @@ def train_agent(env, agent, replay_buffer, args):
             total_timesteps += 1
             progress_bar.update(1)
             
-            # 更新成功标志（如果任务在回合中途就完成了）
+            # update success signal
             if 'is_success' in info:
                 episode_success = max(episode_success, info['is_success'])
-            elif reward > 0.9:  # 根据具体环境调整阈值
+            elif reward > 0.9:  # update threshould value depoends on the env
                 episode_success = 1.0
             
             # Train agent
@@ -88,8 +88,8 @@ def train_agent(env, agent, replay_buffer, args):
                 train_start = time.time()
                 train_metrics = agent.train(replay_buffer, args.batch_size)
                 training_time += time.time() - train_start
-            
-            # 基于时间步数的评估已被注释掉
+
+            # THIS IS EVALUATION BASED ON TIMESTEP
             # if total_timesteps % args.eval_freq == 0:
             #     eval_score, eval_success = evaluate_agent(env, agent, args.eval_episodes)
             #     evaluation_scores.append((total_timesteps, eval_score))
@@ -112,9 +112,9 @@ def train_agent(env, agent, replay_buffer, args):
         # Episode completed
         episode_rewards.append(episode_reward)
         episode_lengths.append(episode_length)
-        episode_success_rates.append(episode_success)  # 记录这个回合是否成功
+        episode_success_rates.append(episode_success)  # record if success or not
         
-        # 每4个回合进行一次评估
+        # evaluate for 4 steps
         if episode_count % 4 == 0:
             eval_score, eval_success = evaluate_agent(env, agent, args.eval_episodes)
             evaluation_scores.append((total_timesteps, eval_score))
@@ -133,7 +133,7 @@ def train_agent(env, agent, replay_buffer, args):
         if len(episode_rewards) % 10 == 0:
             avg_reward = np.mean(episode_rewards[-10:])
             avg_length = np.mean(episode_lengths[-10:])
-            avg_success = np.mean(episode_success_rates[-10:])  # 计算最近10个回合的平均成功率
+            avg_success = np.mean(episode_success_rates[-10:])  # caculate success rate for recent 10 
             print(f"\nEpisode {len(episode_rewards)}: Avg Reward = {avg_reward:.2f}, Avg Length = {avg_length:.1f}, Success Rate = {avg_success:.2f}")
     
     progress_bar.close()
@@ -149,12 +149,12 @@ def train_agent(env, agent, replay_buffer, args):
     stats = {
         "episode_rewards": episode_rewards,
         "episode_lengths": episode_lengths,
-        "episode_success_rates": episode_success_rates,  # 添加成功率统计
+        "episode_success_rates": episode_success_rates,  # add success rate 
         "evaluation_scores": evaluation_scores,
-        "evaluation_success_rates": evaluation_success_rates,  # 添加评估成功率统计
+        "evaluation_success_rates": evaluation_success_rates,  # add evaluation of success rate
         "training_time": training_time,
         "final_score": final_score,
-        "final_success_rate": final_success  # 添加最终成功率
+        "final_success_rate": final_success  # add final success rate
     }
     
     # Plot learning curve with success rate
@@ -175,7 +175,7 @@ def evaluate_agent(env, agent, num_episodes=10):
         tuple: (average_reward, success_rate) 返回值增加成功率
     """
     eval_rewards = []
-    successes = 0  # 记录成功次数
+    successes = 0  # record number of success
     
     for _ in range(num_episodes):
         state, info = env.reset()
@@ -192,10 +192,10 @@ def evaluate_agent(env, agent, num_episodes=10):
             episode_reward += reward
             state = next_state
             
-            # 检查是否成功
+            # check is success
             if 'is_success' in info:
                 episode_success = max(episode_success, info['is_success'])
-            elif reward > 0.9:  # 根据具体环境调整阈值
+            elif reward > 0.9:  
                 episode_success = 1.0
         
         eval_rewards.append(episode_reward)
@@ -212,80 +212,64 @@ def plot_learning_curve(stats, args):
         stats (dict): Training statistics.
         args: Training arguments.
     """
-    # 创建多个图表而不是子图，这样可以单独导出成功率图
+    # create multiple plots
     
-    # 1. 成功率图表 - 模仿您提供的示例样式
     plt.figure(figsize=(12, 8))
-    
-    # 设置深色背景
     plt.style.use('dark_background')
     
-    # 绘制评估成功率 - 蓝色线条
+    # success rate
     timesteps, scores = zip(*stats["evaluation_scores"])
     timesteps_success, success_rates = zip(*stats["evaluation_success_rates"])
     
-    # 转换为每K步
     timesteps_k = [t/1000 for t in timesteps_success]
-    
-    # 绘制网格
     plt.grid(True, color='gray', linestyle='-', linewidth=0.5, alpha=0.5)
     
-    # 绘制训练中的成功率 - 使用窗口平滑处理以匹配示例中的曲线
-    window_size = 20  # 可以根据需要调整
+    window_size = 20 
     episode_successes = stats["episode_success_rates"]
     
-    # 计算每个时间步的episode索引
+    # caculate episode length for each time step
     total_steps = args.max_timesteps
     total_episodes = len(episode_successes)
     steps_per_episode = [args.max_episode_steps] * total_episodes
     episode_steps = np.cumsum(steps_per_episode)
     
-    # 确保索引不超出范围
     valid_indices = episode_steps <= total_steps
     episode_steps = episode_steps[valid_indices]
     episode_successes = episode_successes[:len(episode_steps)]
     
-    # 转换为K单位
     episode_steps_k = [s/1000 for s in episode_steps]
     
-    # 平滑处理训练成功率曲线
+    # smoothing the success rate plot
     if len(episode_successes) > window_size:
         smooth_successes = []
         for i in range(len(episode_successes) - window_size + 1):
             smooth_successes.append(np.mean(episode_successes[i:i+window_size]))
         smooth_x = episode_steps_k[window_size-1:]
         
-        # 绘制训练成功率 - 青色线条
         plt.plot(smooth_x, smooth_successes, color='#40E0D0', linewidth=1.5, label=f'Training (smoothed)')
     
-    # 绘制评估成功率 - 蓝色线条，明显更亮
     plt.plot(timesteps_k, success_rates, color='#1E90FF', linewidth=2, label='Evaluation')
     
-    # 添加水平参考线
+    # horizontal line
     for y in [0.2, 0.4, 0.6, 0.8, 1.0]:
         plt.axhline(y=y, color='gray', linestyle='-', alpha=0.3)
     
-    # 设置坐标轴范围和标签
     plt.ylim(0, 1.05)
     plt.xlim(0, max(timesteps_k))
     plt.xlabel('Timesteps (K)', fontsize=12)
     plt.ylabel('Success Rate', fontsize=12)
     plt.title(f'Success Rate for {args.algorithm} on {args.env}', fontsize=14)
     
-    # 添加图例
     plt.legend(loc='lower right')
-    
-    # 保存成功率图
+
     plt.tight_layout()
     plt.savefig(f"{args.save_dir}/{args.algorithm}_success_rate.png", dpi=300)
-    
-    # 重置样式以绘制其他图表
     plt.style.use('default')
     
-    # 2. 原始的三个子图 (可选，保留原来的完整图)
+
     fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 18))
     
-    # 奖励图
+    # reward plot
     ax1.plot(stats["episode_rewards"], label="Episode Reward")
     window_size = min(10, len(stats["episode_rewards"]))
     if window_size > 0:
@@ -302,7 +286,7 @@ def plot_learning_curve(stats, args):
     ax1.legend()
     ax1.grid(True)
     
-    # 成功率图
+    # success plot
     ax2.plot(stats["episode_success_rates"], label="Success Rate")
     window_size = min(10, len(stats["episode_success_rates"]))
     if window_size > 0:
@@ -319,7 +303,7 @@ def plot_learning_curve(stats, args):
     ax2.legend()
     ax2.grid(True)
     
-    # 评估图
+    # evaluation plot
     ax3.plot(timesteps, scores, 'b-o', label="Evaluation Score")
     ax3.set_xlabel("Timesteps")
     ax3.set_ylabel("Average Reward")

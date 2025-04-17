@@ -6,61 +6,55 @@ import imageio
 from PIL import Image
 import time
 
-# 设置路径
+# set path
 MODEL_PATH = "./models/sac_her_No_DQ_panda_pick_and_place.zip"
 OUTPUT_VIDEO = "panda_PickAndPlace_demo_10s.mp4"
 
-# 创建环境
+# create env
 env = gym.make("PandaPickAndPlace-v3", render_mode="rgb_array")
 
-# 加载模型
+# load model
 model = SAC.load(MODEL_PATH, env=env)
-print(f"模型成功从 {MODEL_PATH} 加载")
+print(f"Loaded from {MODEL_PATH} successfully")
 
-# 准备保存帧
 frames = []
 
-# 参数设置
-num_episodes = 30       # 执行更多次抓取动作以获得足够的素材
-target_video_length = 10  # 目标视频长度（秒）
+# set parameters
+num_episodes = 30       
+target_video_length = 10  
 
-print("开始执行并录制演示...")
+print("Startomg...")
 
-# 执行多个抓取任务直到收集足够的帧
 for episode in range(num_episodes):
-    print(f"开始第 {episode+1}/{num_episodes} 次抓取")
+    print(f"Starting {episode+1}/{num_episodes} th grasping")
     
-    # 重置环境获取新的目标位置
+    # reset
     observation, _ = env.reset()
     
-    # 执行当前抓取任务
+    # conduct current task
     steps = 0
-    max_steps = 50  # 每次抓取的最大步数
+    max_steps = 50  # maximum timestep 
     
     while steps < max_steps:
         steps += 1
         
-        # 获取模型预测的动作 - 使用原始速度
         action, _ = model.predict(observation, deterministic=True)
         
-        # 执行动作 - 不加速或减速
         observation, reward, done, truncated, _ = env.step(action)
         
-        # 每一步都捕获帧
         frame = env.render()
         if frame is not None:
             frames.append(Image.fromarray(frame))
         
-        # 如果完成了当前任务，立即开始下一个
+        # if finish the current task, start the next
         if done or truncated:
             print(f"  第 {episode+1} 次抓取在 {steps} 步后完成")
             break
     
-    # 如果没有提前完成，打印信息
+    # if not finish in advance, finish it
     if not (done or truncated):
         print(f"  第 {episode+1} 次抓取达到步数上限")
     
-    # 如果已经录制了超过1000帧，就停止以避免内存问题
     if len(frames) > 1000:
         print(f"已收集 {len(frames)} 帧，达到上限，停止录制")
         break

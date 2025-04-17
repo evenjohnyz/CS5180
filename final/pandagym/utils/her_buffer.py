@@ -96,27 +96,25 @@ class HERBuffer:
             np.ndarray: Sampled achieved goals.
         """
         if self.strategy == 'future':
-            # 计算有效的未来时间步范围
+            # caculate time step for the feature
             if episode_length - t - 1 > 0:
-                # 使用numpy直接生成随机数组，避免列表推导式
                 offsets = np.random.randint(1, episode_length - t, size=n_samples)
                 future_indices = (episode_start + t + offsets) % self.max_size
             else:
-                # 如果没有未来时间步，从整个回合采样
+                # sampling from all the sets if there are no feature time steps
                 offsets = np.random.randint(0, episode_length, size=n_samples)
                 future_indices = (episode_start + offsets) % self.max_size
             
             return self.achieved_goal[future_indices]
         
         elif self.strategy == 'episode':
-            # 从整个回合中随机采样
             offsets = np.random.randint(0, episode_length, size=n_samples)
             episode_indices = (episode_start + offsets) % self.max_size
             
             return self.achieved_goal[episode_indices]
         
         elif self.strategy == 'random':
-            # 从整个缓冲区随机采样
+            # random sampling
             random_indices = np.random.randint(0, self.size, size=n_samples)
             
             return self.achieved_goal[random_indices]
