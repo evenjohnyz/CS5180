@@ -48,39 +48,37 @@ for episode in range(num_episodes):
         
         # if finish the current task, start the next
         if done or truncated:
-            print(f"  第 {episode+1} 次抓取在 {steps} 步后完成")
+            print(f"Compelete {episode+1}th grasping after  {steps} steps")
             break
     
     # if not finish in advance, finish it
     if not (done or truncated):
-        print(f"  第 {episode+1} 次抓取达到步数上限")
+        print(f"{episode+1} grasping reaches time steps limit")
     
     if len(frames) > 1000:
-        print(f"已收集 {len(frames)} 帧，达到上限，停止录制")
+        print(f"Already collect {len(frames)} framse，reaching the limit, stop recording")
         break
 
 env.close()
-print(f"\n录制完成，共 {len(frames)} 帧")
+print(f"\nCompelet recording {len(frames)} frames in total")
 
-# 计算适当的帧率以达到目标视频长度
+
 fps = len(frames) / target_video_length
-print(f"计算的帧率: {fps:.1f} fps (用于将视频压缩至10秒)")
+print(f"Calculated frame rate: {fps:.1f} fps (used to compress the video to 10 seconds)")
 
-# 保存为视频
+# save to video
 if len(frames) > 0:
-    # 如果帧率过高，考虑抽样帧以降低帧率
-    max_reasonable_fps = 60  # 大多数视频播放器能良好支持的最高帧率
+    max_reasonable_fps = 60  
     
     if fps > max_reasonable_fps:
-        # 需要抽样以获得合理的帧率
+        # sample to get reasonable frame rate
         sampling_rate = int(fps / max_reasonable_fps)
         sampled_frames = frames[::sampling_rate]
         adjusted_fps = len(sampled_frames) / target_video_length
         
-        print(f"原始帧率太高，从 {len(frames)} 帧中抽样为 {len(sampled_frames)} 帧")
-        print(f"调整后的帧率: {adjusted_fps:.1f} fps")
+        print(f"The original frame rate is too high, sampled down from {len(frames)} frames to {len(sampled_frames)} frames")
+        print(f"Adjusted frame rate: {adjusted_fps:.1f} fps")
         
-        # 使用抽样后的帧
         imageio.mimsave(
             OUTPUT_VIDEO, 
             [np.array(frame) for frame in sampled_frames], 
@@ -88,7 +86,7 @@ if len(frames) > 0:
             quality=9
         )
     else:
-        # 直接使用原始帧率
+        # using original frame rate directly
         imageio.mimsave(
             OUTPUT_VIDEO, 
             [np.array(frame) for frame in frames], 
@@ -96,7 +94,7 @@ if len(frames) > 0:
             quality=9
         )
     
-    print(f"视频已保存到 {OUTPUT_VIDEO}")
-    print(f"视频长度约为 {target_video_length} 秒")
+    print(f"Video saved to {OUTPUT_VIDEO}")
+    print(f"Video duration is approximately {target_video_length} seconds")
 else:
-    print("没有捕获到帧，无法创建视频")
+    print("No frames captured, unable to create video") 

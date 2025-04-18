@@ -42,13 +42,12 @@ model = TD3(
     verbose=1
 )
 
-# 在训练时添加回调
 model.learn(total_timesteps=2_000_000)
 
-# 保存模型
+# save model
 model.save("models/td3_her_panda_pick_and_place")
 
-# 测试模型
+# test model
 obs, info = env.reset()
 for _ in range(1000):
     action, _ = model.predict(obs, deterministic=True)

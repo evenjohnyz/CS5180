@@ -5,19 +5,18 @@ import torch
 from stable_baselines3 import DDPG, TD3, SAC, HerReplayBuffer
 from stable_baselines3.common.evaluation import evaluate_policy
 
-# 设置随机种子
+# random seed
 seed = 42
 np.random.seed(seed)
 torch.manual_seed(seed)
 
-# 创建环境
 env = gym.make("PandaReach-v3")
 env.reset(seed=seed)
 env.action_space.seed(seed)
 
 log_dir = './panda_reach_v3_tensorboard/'
 
-# 评估函数
+# evauluate function
 def train_and_evaluate(model_class, name, use_her=False, n_critics=None, buffer_size=1_000_000, total_timesteps=30000):
     print(f"\nTraining {name}...")
     kwargs = dict(
@@ -36,10 +35,9 @@ def train_and_evaluate(model_class, name, use_her=False, n_critics=None, buffer_
     model = model_class(**kwargs)
     model.learn(total_timesteps=total_timesteps)
 
-    # 保存模型
     model.save(name)
 
-    # 评估模型
+    # evaluate model
     mean_reward, std_reward = evaluate_policy(model, env, n_eval_episodes=10)
     print(f"{name} - Mean reward: {mean_reward:.2f} +/- {std_reward:.2f}")
 
